@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贴纸素材切割工具</title>
+    <style>
+        :root {
+            --primary-color: #7e57c2;
+            --secondary-color: #5e35b1;
+            --light-color: #f5f5f5;
+            --dark-color: #333;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f9f9f9;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .upload-section {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+        
+        .preview-section {
+            flex: 2;
+            min-width: 300px;
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+        
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: var(--primary-color);
+            background-color: rgba(126, 87, 194, 0.05);
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background-color: #e0e0e0;
+            color: var(--dark-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #d0d0d0;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .file-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-icon {
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+        
+        .file-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .file-size {
+            color: #777;
+            font-size: 0.9rem;
+        }
+        
+        .remove-file {
+            color: var(--error-color);
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .preview-area {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+        
+        .sticker-preview {
+            position: relative;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            background-color: #f9f9f9;
+            transition: transform 0.2s;
+        }
+        
+        .sticker-preview:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sticker-img {
+            max-width: 100%;
+            max-height: 80px;
+            object-fit: contain;
+        }
+        
+        .sticker-name {
+            margin-top: 5px;
+            font-size: 0.8rem;
+            color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .download-btn {
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .processing {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .message {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        .message.success {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+        
+        .message.error {
+            background-color: rgba(244, 67, 54, 0.1);
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+        }
+        
+        .settings {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+        
+        .setting-item {
+            margin-bottom: 10px;
+        }
+        
+        .setting-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .setting-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .upload-section, .preview-section {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>贴纸素材切割工具</h1>
+            <p class="subtitle">上传透明底贴纸集合图，自动切割成单个贴纸素材</p>
+        </header>
+        
+        <div class="main-content">
+            <section class="upload-section">
+                <h2>上传贴纸集合图</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p class="upload-text">拖放图片到这里，或点击选择文件</p>
+                    <p class="file-types">支持PNG格式（透明背景）</p>
+                    <input type="file" id="fileInput" accept="image/png" multiple style="display: none;">
+                </div>
+                
+                <div class="settings">
+                    <h3>切割设置</h3>
+                    <div class="setting-item">
+                        <label class="setting-label">最小贴纸尺寸 (像素)</label>
+                        <input type="number" id="minSize" class="setting-input" value="20" min="5" max="100">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">容差 (检测灵敏度)</label>
+                        <input type="range" id="tolerance" class="setting-input" min="0" max="255" value="10">
+                        <span id="toleranceValue">10</span>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn" id="processBtn">开始处理</button>
+                    <button class="btn btn-secondary" id="clearBtn">清空列表</button>
+                </div>
+                
+                <div class="message" id="message"></div>
+                
+                <div class="file-list" id="fileList">
+                    <!-- 文件列表将在这里动态生成 -->
+                </div>
+            </section>
+            
+            <section class="preview-section">
+                <h2>预览切割结果</h2>
+                <div class="processing" id="processing">
+                    <div class="spinner"></div>
+                    <p>正在处理图片，请稍候...</p>
+                </div>
+                
+                <div class="preview-area" id="previewArea">
+                    <!-- 切割后的贴纸预览将在这里显示 -->
+                    <p class="upload-text" id="emptyPreview">处理后的贴纸将在这里显示</p>
+                </div>
+                
+                <button class="btn download-btn" id="downloadBtn" disabled>下载全部贴纸</button>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const fileList = document.getElementById('fileList');
+            const processBtn = document.getElementById('processBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const previewArea = document.getElementById('previewArea');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const processing = document.getElementById('processing');
+            const message = document.getElementById('message');
+            const emptyPreview = document.getElementById('emptyPreview');
+            const minSizeInput = document.getElementById('minSize');
+            const toleranceInput = document.getElementById('tolerance');
+            const toleranceValue = document.getElementById('toleranceValue');
+            
+            let uploadedFiles = [];
+            let processedStickers = [];
+            
+            // 更新容差值显示
+            toleranceInput.addEventListener('input', function() {
+                toleranceValue.textContent = this.value;
+            });
+            
+            // 点击上传区域触发文件选择
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // 拖放功能
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('drag-over');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('drag-over');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('drag-over');
+                handleFiles(e.dataTransfer.files);
+            });
+            
+            // 文件选择处理
+            fileInput.addEventListener('change', () => {
+                handleFiles(fileInput.files);
+                fileInput.value = ''; // 重置文件输入，允许重复选择相同文件
+            });
+            
+            // 处理上传的文件
+            function handleFiles(files) {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    
+                    // 检查文件类型
+                    if (file.type !== 'image/png') {
+                        showMessage('只支持PNG格式的图片', 'error');
+                        continue;
+                    }
+                    
+                    // 检查文件是否已存在
+                    if (uploadedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                        showMessage(`文件 "${file.name}" 已存在`, 'error');
+                        continue;
+                    }
+                    
+                    uploadedFiles.push(file);
+                    addFileToList(file);
+                }
+                
+                updateProcessButton();
+            }
+            
+            // 添加文件到列表
+            function addFileToList(file) {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                const fileSize = formatFileSize(file.size);
+                
+                fileItem.innerHTML = `
+                    <span class="file-icon">📄</span>
+                    <span class="file-name" title="${file.name}">${file.name}</span>
+                    <span class="file-size">${fileSize}</span>
+                    <span class="remove-file" data-name="${file.name}">✕</span>
+                `;
+                
+                fileList.appendChild(fileItem);
+                
+                // 添加删除文件事件
+                fileItem.querySelector('.remove-file').addEventListener('click', function() {
+                    const fileName = this.getAttribute('data-name');
+                    removeFile(fileName);
+                });
+            }
+            
+            // 移除文件
+            function removeFile(fileName) {
+                uploadedFiles = uploadedFiles.filter(file => file.name !== fileName);
+                
+                // 从UI中移除
+                const fileItems = fileList.querySelectorAll('.file-item');
+                fileItems.forEach(item => {
+                    const name = item.querySelector('.file-name').textContent;
+                    if (name === fileName) {
+                        fileList.removeChild(item);
+                    }
+                });
+                
+                updateProcessButton();
+            }
+            
+            // 清空文件列表
+            clearBtn.addEventListener('click', () => {
+                uploadedFiles = [];
+                fileList.innerHTML = '';
+                updateProcessButton();
+            });
+            
+            // 更新处理按钮状态
+            function updateProcessButton() {
+                processBtn.disabled = uploadedFiles.length === 0;
+            }
+            
+            // 处理按钮点击事件
+            processBtn.addEventListener('click', processImages);
+            
+            // 处理图片
+            async function processImages() {
+                if (uploadedFiles.length === 0) {
+                    showMessage('请先上传图片', 'error');
+                    return;
+                }
+                
+                // 显示处理中状态
+                processing.style.display = 'block';
+                emptyPreview.style.display = 'none';
+                previewArea.innerHTML = '';
+                processedStickers = [];
+                downloadBtn.disabled = true;
+                
+                // 获取设置参数
+                const minSize = parseInt(minSizeInput.value);
+                const tolerance = parseInt(toleranceInput.value);
+                
+                try {
+                    // 对每个上传的文件进行处理
+                    for (const file of uploadedFiles) {
+                        const stickers = await extractStickersFromImage(file, minSize, tolerance);
+                        processedStickers.push(...stickers);
+                        
+                        // 添加预览
+                        stickers.forEach(sticker => {
+                            addStickerPreview(sticker);
+                        });
+                    }
+                    
+                    // 隐藏处理中状态
+                    processing.style.display = 'none';
+                    
+                    // 启用下载按钮
+                    downloadBtn.disabled = false;
+                    
+                    showMessage(`成功处理 ${uploadedFiles.length} 个文件，生成 ${processedStickers.length} 个贴纸`, 'success');
+                } catch (error) {
+                    processing.style.display = 'none';
+                    showMessage(`处理失败: ${error.message}`, 'error');
+                    console.error(error);
+                }
+            }
+            
+            // 从图像中提取贴纸
+            function extractStickersFromImage(file, minSize, tolerance) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        img.onload = function() {
+                            try {
+                                const stickers = processImage(img, minSize, tolerance, file.name);
+                                resolve(stickers);
+                            } catch (error) {
+                                reject(error);
+                            }
+                        };
+                        img.onerror = () => reject(new Error('图片加载失败'));
+                        img.src = e.target.result;
+                    };
+                    
+                    reader.onerror = () => reject(new Error('文件读取失败'));
+                    reader.readAsDataURL(file);
+                });
+            }
+            
+            // 处理图像并提取贴纸
+            function processImage(img, minSize, tolerance, fileName) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                // 绘制图像到canvas
+                ctx.drawImage(img, 0, 0);
+                
+                // 获取图像数据
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                // 创建访问标记数组
+                const visited = new Array(canvas.width * canvas.height).fill(false);
+                const stickers = [];
+                
+                // 遍历每个像素
+                for (let y = 0; y < canvas.height; y++) {
+                    for (let x = 0; x < canvas.width; x++) {
+                        const index = (y * canvas.width + x) * 4;
+                        
+                        // 如果像素不是透明的且未被访问过
+                        if (data[index + 3] > tolerance && !visited[y * canvas.width + x]) {
+                            // 使用洪水填充算法找到连通区域
+                            const region = floodFill(x, y, data, visited, canvas.width, canvas.height, tolerance);
+                            
+                            // 如果区域足够大，则视为一个贴纸
+                            if (region.width >= minSize && region.height >= minSize) {
+                                // 提取贴纸
+                                const stickerCanvas = extractRegion(canvas, region);
+                                stickers.push({
+                                    id: `${fileName}-${stickers.length}`,
+                                    name: `${fileName.replace('.png', '')}_sticker_${stickers.length + 1}.png`,
+                                    dataUrl: stickerCanvas.toDataURL('image/png'),
+                                    region: region
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                return stickers;
+            }
+            
+            // 洪水填充算法找到连通区域
+            function floodFill(startX, startY, data, visited, width, height, tolerance) {
+                const stack = [[startX, startY]];
+                let minX = startX, maxX = startX;
+                let minY = startY, maxY = startY;
+                
+                visited[startY * width + startX] = true;
+                
+                while (stack.length > 0) {
+                    const [x, y] = stack.pop();
+                    
+                    // 更新边界
+                    minX = Math.min(minX, x);
+                    maxX = Math.max(maxX, x);
+                    minY = Math.min(minY, y);
+                    maxY = Math.max(maxY, y);
+                    
+                    // 检查四个方向的邻居
+                    const neighbors = [
+                        [x - 1, y], [x + 1, y],
+                        [x, y - 1], [x, y + 1]
+                    ];
+                    
+                    for (const [nx, ny] of neighbors) {
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                            const index = (ny * width + nx) * 4;
+                            
+                            if (!visited[ny * width + nx] && data[index + 3] > tolerance) {
+                                visited[ny * width + nx] = true;
+                                stack.push([nx, ny]);
+                            }
+                        }
+                    }
+                }
+                
+                return {
+                    x: minX,
+                    y: minY,
+                    width: maxX - minX + 1,
+                    height: maxY - minY + 1
+                };
+            }
+            
+            // 提取区域为单独的canvas
+            function extractRegion(sourceCanvas, region) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = region.width;
+                canvas.height = region.height;
+                
+                // 绘制区域到新canvas
+                ctx.drawImage(
+                    sourceCanvas,
+                    region.x, region.y, region.width, region.height,
+                    0, 0, region.width, region.height
+                );
+                
+                return canvas;
+            }
+            
+            // 添加贴纸预览
+            function addStickerPreview(sticker) {
+                const stickerElement = document.createElement('div');
+                stickerElement.className = 'sticker-preview';
+                stickerElement.innerHTML = `
+                    <img src="${sticker.dataUrl}" alt="${sticker.name}" class="sticker-img">
+                    <div class="sticker-name">${sticker.name}</div>
+                `;
+                
+                previewArea.appendChild(stickerElement);
+            }
+            
+            // 下载全部贴纸
+            downloadBtn.addEventListener('click', async () => {
+                if (processedStickers.length === 0) {
+                    showMessage('没有可下载的贴纸', 'error');
+                    return;
+                }
+                
+                try {
+                    showMessage(`开始打包 ${processedStickers.length} 个贴纸...`, 'success');
+                    
+                    // 使用JSZip库创建ZIP文件
+                    if (typeof JSZip === 'undefined') {
+                        // 动态加载JSZip库
+                        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+                    }
+                    
+                    const zip = new JSZip();
+                    const folder = zip.folder("stickers");
+                    
+                    // 添加所有贴纸到ZIP
+                    for (let i = 0; i < processedStickers.length; i++) {
+                        const sticker = processedStickers[i];
+                        // 将dataURL转换为blob
+                        const blob = dataURLToBlob(sticker.dataUrl);
+                        folder.file(sticker.name, blob);
+                    }
+                    
+                    // 生成ZIP文件
+                    const content = await zip.generateAsync({type: "blob"});
+                    
+                    // 创建下载链接
+                    const url = URL.createObjectURL(content);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'stickers.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    showMessage('下载完成！', 'success');
+                } catch (error) {
+                    showMessage(`下载失败: ${error.message}`, 'error');
+                    console.error(error);
+                }
+            });
+            
+            // dataURL转Blob
+            function dataURLToBlob(dataURL) {
+                const parts = dataURL.split(';base64,');
+                const contentType = parts[0].split(':')[1];
+                const raw = window.atob(parts[1]);
+                const rawLength = raw.length;
+                const uInt8Array = new Uint8Array(rawLength);
+                
+                for (let i = 0; i < rawLength; ++i) {
+                    uInt8Array[i] = raw.charCodeAt(i);
+                }
+                
+                return new Blob([uInt8Array], {type: contentType});
+            }
+            
+            // 动态加载脚本
+            function loadScript(src) {
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            }
+            
+            // 显示消息
+            function showMessage(text, type) {
+                message.textContent = text;
+                message.className = `message ${type}`;
+                message.style.display = 'block';
+                
+                // 3秒后自动隐藏
+                setTimeout(() => {
+                    message.style.display = 'none';
+                }, 3000);
+            }
+            
+            // 格式化文件大小
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        });
+    </script>
+</body>
+</html>
